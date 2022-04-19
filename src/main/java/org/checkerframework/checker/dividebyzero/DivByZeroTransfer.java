@@ -71,7 +71,26 @@ public class DivByZeroTransfer extends CFTransfer {
             Comparison operator,
             AnnotationMirror lhs,
             AnnotationMirror rhs) {
-        // TODO
+
+        AnnotationMirror zero = reflect(Zero.class);
+        AnnotationMirror nonzero = reflect(NonZero.class);
+        AnnotationMirror negative = reflect(Negative.class);
+        AnnotationMirror positive = reflect(Positive.class);
+
+        if (operator == Comparison.EQ) {
+            return glb(lhs, rhs);
+        } else if (operator == Comparison.NE && equal(zero, rhs)) {
+            return glb(lhs, nonzero);
+        } else if (operator == Comparison.LT && (equal(rhs, negative) || equal(rhs, zero))) {
+            return glb(lhs, negative);
+        } else if (operator == Comparison.GT && (equal(rhs, positive) || equal(rhs, zero))) {
+            return glb(lhs, positive);
+        } else if (operator == Comparison.LE && equal(rhs, negative)) {
+            return glb(lhs, negative);
+        } else if (operator == Comparison.GE && equal(rhs, positive)) {
+            return glb(lhs, positive);
+        }
+
         return lhs;
     }
 
@@ -93,7 +112,67 @@ public class DivByZeroTransfer extends CFTransfer {
             BinaryOperator operator,
             AnnotationMirror lhs,
             AnnotationMirror rhs) {
-        // TODO
+
+        AnnotationMirror zero = reflect(Zero.class);
+        AnnotationMirror nonzero = reflect(NonZero.class);
+        AnnotationMirror negative = reflect(Negative.class);
+        AnnotationMirror positive = reflect(Positive.class);
+        AnnotationMirror top = top();
+        AnnotationMirror bottom = bottom();
+
+        AnnotationMirror error = top(); // maybe??? idk
+
+        if (operator == BinaryOperator.PLUS) {
+            if (equal(lhs, bottom) || equal(rhs, bottom)) {
+                return bottom;
+            } else if (equal(lhs, top) || equal(rhs,top)) {
+                return top;
+            } else if (equal(lhs, rhs) && !equal(lhs, nonzero)) {
+                return lhs;
+            } else if (equal(lhs, zero)) {
+                return rhs;
+            } else if (equal(rhs, zero)) {
+                return lhs;
+            } // else return top
+        } else if (operator == BinaryOperator.MINUS) {
+            if (equal(lhs, bottom) || equal(rhs, bottom)) {
+                return bottom;
+            } else if (equal(lhs, top) || equal(rhs,top)) {
+                return top;
+            } else if (equal(rhs, zero)) {
+                return lhs;
+            } else if (equal(rhs, positive) && (equal(lhs, zero) || equal(lhs, negative))) {
+                return negative;
+            } else if (equal(rhs, negative) && (equal(lhs, zero) || equal(lhs, positive))) {
+                return positive;
+            } else if (equal(lhs, zero) && equal(rhs, nonzero)) {
+                return nonzero;
+            }
+        } else if (operator == BinaryOperator.TIMES) {
+            if (equal(lhs, bottom) || equal(rhs, bottom)) {
+                return bottom;
+            } else if (equal(lhs, zero) || equal(rhs,zero)) {
+                return zero;
+            } else if (equal(lhs, top) || equal(rhs,top)) {
+                return top;
+            } else if (equal(lhs, nonzero) || equal(rhs,nonzero)) {
+                return top;
+            } else if (equal(lhs, rhs)) {
+                return positive;
+            } else {
+                return negative;
+            }
+        } else if (operator == BinaryOperator.DIVIDE || operator == BinaryOperator.MOD) {
+            // assume integer division here??
+            if (equal(lhs, bottom) || equal(rhs, bottom)) {
+                return bottom;
+            } else if (equal(rhs, top) || equal(rhs,zero)) {
+                return error;
+            } else if (equal(lhs, zero)) {
+                return zero;
+            } // else return top
+        }
+
         return top();
     }
 
